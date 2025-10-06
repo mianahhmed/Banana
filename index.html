@@ -21,11 +21,7 @@
 
     .hit{position:absolute;left:0;top:0;right:0;bottom:0;border-radius:16px;cursor:grab}
 
-    .counter{margin-top:12px;font-weight:700}
-    .message{margin-top:8px;min-height:20px;color:#0b6}
-
     .fountain-layer{position:absolute;left:50%;top:6%;width:300px;height:280px;transform:translateX(-50%);pointer-events:none;overflow:visible}
-
     .jet{filter:drop-shadow(0 6px 10px rgba(0,0,0,0.08));}
 
     .blob{position:absolute;left:50%;top:6%;transform:translateX(-50%);width:60px;height:60px;border-radius:60px;background:linear-gradient(180deg,var(--smoothie),#fff);opacity:0;box-shadow:0 8px 18px rgba(0,0,0,0.08);}
@@ -49,17 +45,16 @@
       100%{opacity:0;transform:translateX(-50%) translateY(-180px) scaleY(1.6)}
     }
 
-    .controls{display:flex;justify-content:center;gap:8px;margin-top:12px}
-    button{background:#111;color:#fff;border:0;padding:8px 12px;border-radius:10px;font-weight:600;cursor:pointer}
-    button.ghost{background:transparent;color:#111;border:1px solid rgba(0,0,0,0.07)}
-
+    .thankyou{font-size:14px;color:#ff0000;margin-top:12px;opacity:0;transition:opacity .6s ease}
+    .show-thanks{opacity:1}
     .hint{font-size:12px;color:#888;margin-top:10px}
   </style>
 </head>
 <body>
   <div class="card">
-    <h1>Hi</h1>
-   
+    <h1>Rub the Banana</h1>
+    <p>Few times up and down</p>
+
     <div class="stage">
       <div class="banana-wrap" id="bananaWrap">
         <svg class="banana" viewBox="0 0 120 320" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
@@ -87,70 +82,34 @@
       </div>
     </div>
 
-    
-    <div class="message" id="message">Hoo yeah</div>
-
-    <div class="controls">
-      <button id="resetBtn" class="ghost">Reset</button>
-      
-    </div>
-    <div class="hint">Slide the banana</div>
+    <div class="thankyou" id="thankyouMsg">Thank's for the HandJob Buddy, Muah</div>
+    <div class="hint">🍌</div>
   </div>
 
   <script>
     const hit = document.getElementById('hitArea');
     const bananaWrap = document.getElementById('bananaWrap');
-    const counterEl = document.getElementById('counter');
-    const messageEl = document.getElementById('message');
-    const resetBtn = document.getElementById('resetBtn');
-    const shareBtn = document.getElementById('shareBtn');
+    const thankyouMsg = document.getElementById('thankyouMsg');
 
     let dragging = false;
     let prevY = 0;
     let prevDir = null;
-    let slides = 0;
-    const TARGET = 5;
+    let slideCount = 0;
     const THRESH = 18;
-
-    function updateCounter(){
-      counterEl.textContent = `Slides: ${slides} / ${TARGET}`;
-      if(slides >= TARGET){ triggerFountain(); }
-      else { messageEl.textContent = 'Keep sliding…'; }
-    }
 
     function triggerFountain(){
       if(bananaWrap.classList.contains('splash')) return;
-
-      messageEl.textContent = 'Pressure building...';
-      bananaWrap.classList.add('press');
-
-      setTimeout(()=>{
-        bananaWrap.classList.remove('press');
-        bananaWrap.classList.add('splash');
-
-        const paths = bananaWrap.querySelectorAll('.jet-path');
-        paths.forEach(p => {
-          const len = p.getTotalLength ? p.getTotalLength() : 900;
-          p.style.strokeDasharray = len;
-          p.style.strokeDashoffset = len;
-          void p.getBoundingClientRect();
-          p.style.transition = 'stroke-dashoffset 1000ms cubic-bezier(.2,.9,.3,1)';
-          p.style.strokeDashoffset = 0;
-        });
-
-        setTimeout(()=>{
-          // keep smoothie visible until reset
-          messageEl.textContent = 'Thanks for the hand job, buddy';
-        }, 1200);
-      }, 600);
-    }
-
-    function reset(){
-      slides = 0;
-      prevDir = null;
-      bananaWrap.classList.remove('splash');
-      updateCounter();
-      messageEl.textContent = 'Keep sliding…';
+      bananaWrap.classList.add('splash');
+      const paths = bananaWrap.querySelectorAll('.jet-path');
+      paths.forEach(p => {
+        const len = p.getTotalLength ? p.getTotalLength() : 900;
+        p.style.strokeDasharray = len;
+        p.style.strokeDashoffset = len;
+        void p.getBoundingClientRect();
+        p.style.transition = 'stroke-dashoffset 1000ms cubic-bezier(.2,.9,.3,1)';
+        p.style.strokeDashoffset = 0;
+      });
+      thankyouMsg.classList.add('show-thanks');
     }
 
     hit.addEventListener('pointerdown', (e)=>{
@@ -163,8 +122,11 @@
       if(Math.abs(dy) > THRESH){
         const dir = dy > 0 ? 'down' : 'up';
         if(prevDir && dir !== prevDir){
-          slides = Math.min(TARGET, slides + 1);
-          updateCounter();
+          slideCount++;
+          if(slideCount >= 5){
+            triggerFountain();
+            slideCount = 0;
+          }
         }
         prevDir = dir; prevY = y;
       }
@@ -172,18 +134,6 @@
 
     hit.addEventListener('pointerup', (e)=>{ dragging = false; hit.releasePointerCapture(e.pointerId); });
     hit.addEventListener('pointercancel', ()=>{ dragging = false; });
-
-    resetBtn.addEventListener('click', reset);
-    shareBtn.addEventListener('click', async ()=>{
-      try{
-        await navigator.clipboard.writeText(location.href);
-        shareBtn.textContent = 'Copied!';
-        setTimeout(()=>shareBtn.textContent = 'Copy link', 1400);
-      }catch(e){
-        shareBtn.textContent = 'Copy failed';
-        setTimeout(()=>shareBtn.textContent = 'Copy link', 1400);
-      }
-    });
 
     window.addEventListener('load', ()=>{
       const paths = document.querySelectorAll('.jet-path');
@@ -194,10 +144,7 @@
           p.style.strokeDashoffset = len;
         }
       });
-      updateCounter();
     });
   </script>
 </body>
 </html>
-
-
